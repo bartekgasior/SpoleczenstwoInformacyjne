@@ -2,6 +2,7 @@ package com.example.barte.projektsi;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
@@ -9,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 
 /**
  * Created by barte on 14.05.2017.
@@ -22,6 +24,7 @@ public class Pop extends AppCompatActivity{
 
         final Button bZapisz = (Button) findViewById(R.id.bZapisz);
         final EditText etZnak = (EditText) findViewById(R.id.etZnak);
+        final ImageView ivSymbol = (ImageView) findViewById(R.id.ivSymbol);
 
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
@@ -31,12 +34,14 @@ public class Pop extends AppCompatActivity{
         final int x = getIntent.getIntExtra("x", -1);
         final int y = getIntent.getIntExtra("y", -1);
         final int rectangleNumber = getIntent.getIntExtra("rectangleNumber", -1);
-        Log.v("projektSI", "x - " + x + " y - " + y);
+        final Bitmap croppedSymbol = (Bitmap) getIntent.getParcelableExtra("croppedSymbol");
+
+        ivSymbol.setImageBitmap(croppedSymbol);
 
         int width = dm.widthPixels;
         int height = dm.heightPixels;
 
-        getWindow().setLayout((int) (width*.5), (int)(height*.6));
+        getWindow().setLayout((int) (width*.8), (int)(height*.9));
 
         bZapisz.setOnClickListener(new View.OnClickListener() {
             @Override

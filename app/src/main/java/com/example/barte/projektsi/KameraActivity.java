@@ -3,6 +3,7 @@ package com.example.barte.projektsi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -64,6 +65,7 @@ public class KameraActivity extends AppCompatActivity{
     private String znak ="";
     private int boundingRectangleThicnkess = 15;
     private TextView[] textViewArray;
+    private Bitmap myBitmap, myBitmapForPopWindow;
 
     List<Rect> bounding_rect = new ArrayList<Rect>();
     Rect rect;
@@ -106,25 +108,23 @@ public class KameraActivity extends AppCompatActivity{
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    /*if (coordinatesCounter < maxCoordinates) {
-                        coordinates[coordinatesCounter] = new Point(event.getX(), event.getY());
-                        coordinatesCounter++;
-                        Toast.makeText(getApplicationContext(), "Touch coordinates : " + String.valueOf(event.getX()) + "x" + String.valueOf(event.getY()) +
-                                        "\n" + coordinatesCounter + "/" + maxCoordinates,
-                                Toast.LENGTH_SHORT).show();
-                    }*/
-
+                    Bitmap croppedSymbol;
                     for(int i =0; i< bounding_rect.size();i++) {
-                        /*Log.v("projektSI","szerokosc: " + showPhoto.getWidth() + "wysokosc: " + showPhoto.getHeight());
-                        Log.v("projektSI","rect[" + i + "} -> " + bounding_rect.get(i).x  + " " + bounding_rect.get(i).y );
-                        Log.v("projektSI","kliknięto: " + event.getX() + " " + event.getY());*/
                         if ( bounding_rect.get(i).x < event.getX() && event.getX() < (bounding_rect.get(i).x + bounding_rect.get(i).width) && bounding_rect.get(i).y < event.getY() && event.getY() < (bounding_rect.get(i).y + bounding_rect.get(i).height)) {
-                            Toast.makeText(getApplicationContext(), "kliknięto "+i+" obiekt", Toast.LENGTH_SHORT).show();
+                            float recX = bounding_rect.get(i).x;
+                            float recY = bounding_rect.get(i).y;
+                            float recWidth = bounding_rect.get(i).width;
+                            float recHeight = bounding_rect.get(i).height;
+
+                            croppedSymbol = Bitmap.createBitmap(myBitmapForPopWindow,(int) recX - boundingRectangleThicnkess, (int) recY - boundingRectangleThicnkess, (int) recWidth + 2* boundingRectangleThicnkess, (int) recHeight + 2*boundingRectangleThicnkess);
+                            croppedSymbol = scaleDownBitmap(croppedSymbol, 100, KameraActivity.this);
+
                             Intent intent = new Intent(KameraActivity.this, Pop.class);
+                            intent.putExtra("croppedSymbol", croppedSymbol);
                             intent.putExtra("x", bounding_rect.get(i).x);
                             intent.putExtra("y", bounding_rect.get(i).y);
                             intent.putExtra("rectangleNumber", i);
-                            Log.v("projektSI", "x - " + bounding_rect.get(i).x + " y - " + bounding_rect.get(i).y);
+
                             startActivityForResult(intent, 0);
                         }
                     }
@@ -162,12 +162,15 @@ public class KameraActivity extends AppCompatActivity{
             File imgFile = new File(mCurrentPhotoPath);
 
             if (imgFile.exists()) {
-                Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+                myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+
                 img = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC1);
+                myBitmapForPopWindow = myBitmap.copy(myBitmap.getConfig(),true);
+
 
                 Mat hierarchy = new Mat();
-
                 Utils.bitmapToMat(myBitmap, img);
+                Utils.matToBitmap(img,myBitmapForPopWindow);
 
                 Imgproc.cvtColor(img, gray, Imgproc.COLOR_BGR2GRAY);
                 Imgproc.threshold(gray, gray, 25, 225, Imgproc.THRESH_BINARY_INV);
@@ -178,7 +181,7 @@ public class KameraActivity extends AppCompatActivity{
                 Log.v("projektSI", "rozmiar: " + contours.size());
                 for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
                     /*wypelnienie kazdego konturu kolorem*/
-                    Imgproc.drawContours(img, contours, contourIdx, new Scalar(0, 0, 255), -1);
+                    //Imgproc.drawContours(img, contours, contourIdx, new Scalar(0, 0, 255), -1);
                     bounding_rect.add(Imgproc.boundingRect(contours.get(contourIdx)));
                     Imgproc.rectangle(img, new Point(bounding_rect.get(contourIdx).x, bounding_rect.get(contourIdx).y), new Point(bounding_rect.get(contourIdx).x + bounding_rect.get(contourIdx).width, bounding_rect.get(contourIdx).y + bounding_rect.get(contourIdx).height), new Scalar(255, 0, 0), boundingRectangleThicnkess);
                 }
@@ -266,5 +269,17 @@ public class KameraActivity extends AppCompatActivity{
         textViewArray[num].setTextColor(Color.RED);
         textViewArray[num].setPadding(x, y - (int) textViewArray[num].getTextSize() - boundingRectangleThicnkess, 0, 0);
         layout.addView(textViewArray[num]);
+    }
+
+    public static Bitmap scaleDownBitmap(Bitmap photo, int newHeight, Context context) {
+
+        final float densityMultiplier = context.getResources().getDisplayMetrics().density;
+
+        int h= (int) (newHeight*densityMultiplier);
+        int w= (int) (h * photo.getWidth()/((double) photo.getHeight()));
+
+        photo=Bitmap.createScaledBitmap(photo, w, h, true);
+
+        return photo;
     }
 }
